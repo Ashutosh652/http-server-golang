@@ -1,0 +1,1 @@
+This is a simple custom HTTP server built in Go with the help of [CodeCrafters](https://app.codecrafters.io/courses/http-server/overview).
