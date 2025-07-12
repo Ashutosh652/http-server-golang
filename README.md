@@ -1,4 +1,4 @@
-This is a simple custom HTTP server built in Go with the help of [CodeCrafters](https://app.codecrafters.io/courses/http-server/overview).
+A simple custom HTTP server built from scratch in Go, developed as part of the [CodeCrafters](https://app.codecrafters.io/courses/http-server/overview) "Build Your Own HTTP Server" challenge.
 
 This project implements a basic HTTP server in Go without using high-level HTTP libraries. It demonstrates fundamental networking concepts and HTTP protocol implementation by building the server from the ground up using Go's standard library.
 
