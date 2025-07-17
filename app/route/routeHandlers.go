@@ -1,7 +1,9 @@
-package main
+package route
 
 import (
 	"fmt"
+	"http-server-go/app/config"
+	"http-server-go/app/http"
 	"net"
 	"os"
 	"path/filepath"
@@ -9,15 +11,15 @@ import (
 	"strings"
 )
 
-func handleRoot(conn net.Conn, config Config, req *HttpRequest) *HttpResponse {
-	return generic200Response()
+func handleRoot(conn net.Conn, config config.Config, req *http.HttpRequest) *http.HttpResponse {
+	return http.Generic200Response()
 }
 
-func handleEcho(conn net.Conn, config Config, req *HttpRequest) *HttpResponse {
+func handleEcho(conn net.Conn, config config.Config, req *http.HttpRequest) *http.HttpResponse {
 	splitString := strings.Split(req.Target, "/")
 	pathString := splitString[len(splitString)-1]
-	httpResponse := generic200Response()
-	httpResponse.addOrReplaceHeaders(map[string]string{
+	httpResponse := http.Generic200Response()
+	httpResponse.AddOrReplaceHeaders(map[string]string{
 		"Content-Type":   "text/plain",
 		"Content-Length": strconv.Itoa(len(pathString)),
 	})
@@ -25,10 +27,10 @@ func handleEcho(conn net.Conn, config Config, req *HttpRequest) *HttpResponse {
 	return httpResponse
 }
 
-func handleUserAgent(conn net.Conn, config Config, req *HttpRequest) *HttpResponse {
-	userAgent := req.getHeader("User-Agent")
-	httpResponse := generic200Response()
-	httpResponse.addOrReplaceHeaders(map[string]string{
+func handleUserAgent(conn net.Conn, config config.Config, req *http.HttpRequest) *http.HttpResponse {
+	userAgent := req.GetHeader("User-Agent")
+	httpResponse := http.Generic200Response()
+	httpResponse.AddOrReplaceHeaders(map[string]string{
 		"Content-Type":   "text/plain",
 		"Content-Length": strconv.Itoa(len(userAgent)),
 	})
@@ -36,35 +38,35 @@ func handleUserAgent(conn net.Conn, config Config, req *HttpRequest) *HttpRespon
 	return httpResponse
 }
 
-func handleFiles(conn net.Conn, config Config, req *HttpRequest) *HttpResponse {
+func handleFiles(conn net.Conn, config config.Config, req *http.HttpRequest) *http.HttpResponse {
 	splitString := strings.Split(req.Target, "/")
 	fileName := splitString[len(splitString)-1]
-	httpResponse := generic200Response()
+	httpResponse := http.Generic200Response()
 
 	switch req.Method {
-	case HTTP_GET_METHOD:
+	case http.HTTP_GET_METHOD:
 		content, err := os.ReadFile(config.FileDirectory + fileName)
 		if err != nil {
-			return generic400Error()
+			return http.Generic400Error()
 		}
-		httpResponse.addOrReplaceHeaders(map[string]string{
+		httpResponse.AddOrReplaceHeaders(map[string]string{
 			"Content-Type":   "application/octet-stream",
 			"Content-Length": strconv.Itoa(len(content)),
 		})
 		httpResponse.Body = string(content)
 		return httpResponse
 
-	case HTTP_POST_METHOD:
+	case http.HTTP_POST_METHOD:
 		info, err := os.Stat(config.FileDirectory)
 		if err != nil {
-			httpResponse := generic400Error()
+			httpResponse := http.Generic400Error()
 			if os.IsNotExist(err) {
 				httpResponse.Body = "Directory does not exist."
 			}
 			return httpResponse
 		}
 		if !info.IsDir() {
-			httpResponse := generic400Error()
+			httpResponse := http.Generic400Error()
 			httpResponse.Body = fmt.Sprintf("%s is not a directory", config.FileDirectory)
 			return httpResponse
 		}
@@ -72,7 +74,7 @@ func handleFiles(conn net.Conn, config Config, req *HttpRequest) *HttpResponse {
 		fullPath := filepath.Join(config.FileDirectory, fileName)
 		file, err := os.Create(fullPath)
 		if err != nil {
-			httpResponse := generic400Error()
+			httpResponse := http.Generic400Error()
 			httpResponse.Body = "Could not create file."
 			return httpResponse
 		}
@@ -80,14 +82,14 @@ func handleFiles(conn net.Conn, config Config, req *HttpRequest) *HttpResponse {
 
 		_, err = file.WriteString(req.Body)
 		if err != nil {
-			httpResponse := generic400Error()
+			httpResponse := http.Generic400Error()
 			httpResponse.Body = "Could not write content to file."
 			return httpResponse
 		}
 
-		return generic201Response()
+		return http.Generic201Response()
 
 	default:
-		return generic500Error()
+		return http.Generic500Error()
 	}
 }

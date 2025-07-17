@@ -1,7 +1,10 @@
-package main
+package core
 
 import (
 	"fmt"
+	"http-server-go/app/config"
+	"http-server-go/app/http"
+	"http-server-go/app/route"
 	"io"
 	"net"
 	"os"
@@ -9,11 +12,11 @@ import (
 	"strings"
 )
 
-func isMethodAllowed(method HttpMethod, route Route) bool {
+func isMethodAllowed(method http.HttpMethod, route route.Route) bool {
 	return slices.Contains(route.AllowedMethods, method)
 }
 
-func handleRequest(conn net.Conn, config Config, routes []Route) {
+func handleRequest(conn net.Conn, config config.Config, routes []route.Route) {
 	defer conn.Close()
 
 	for {
@@ -32,22 +35,20 @@ func handleRequest(conn net.Conn, config Config, routes []Route) {
 			return
 		}
 
-		httpRequest := parseRequest(buffer[:n])
+		httpRequest := http.ParseRequest(buffer[:n])
 
 		routeMatch := false
 		for _, route := range routes {
 			if (route.MatchExact && httpRequest.Target == route.Path) || (!route.MatchExact && strings.HasPrefix(httpRequest.Target, route.Path)) {
 				if !isMethodAllowed(httpRequest.Method, route) {
-					httpResponse := generic405Error()
-					httpResponse.addOrReplaceHeader("Allow", strings.Join(route.AllowedMethods.AsStrings(), ", ")+"\r\n")
-					fmt.Println(httpResponse.createResponse())
-					conn.Write([]byte(httpResponse.createResponse()))
+					httpResponse := http.Generic405Error()
+					httpResponse.AddOrReplaceHeader("Allow", strings.Join(route.AllowedMethods.AsStrings(), ", ")+"\r\n")
+					conn.Write([]byte(httpResponse.CreateResponse()))
 					return
 				}
 				httpResponse := route.Handler(conn, config, httpRequest)
-				httpResponse.handleFinalResponse(httpRequest)
-				response := httpResponse.createResponse()
-				fmt.Println(response)
+				httpResponse.HandleFinalResponse(httpRequest)
+				response := httpResponse.CreateResponse()
 				conn.Write([]byte(response))
 				routeMatch = true
 				break
@@ -56,14 +57,14 @@ func handleRequest(conn net.Conn, config Config, routes []Route) {
 		if !routeMatch {
 			conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
 		}
-		if httpRequest.getHeader("Connection") == "close" {
+		if httpRequest.GetHeader("Connection") == "close" {
 			conn.Close()
 		}
 	}
 }
 
-func StartServer(config Config, routes []Route) {
-	l, err := net.Listen("tcp", "0.0.0.0:4221")
+func StartServer(config config.Config, routes []route.Route, port int) {
+	l, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", port))
 	if err != nil {
 		fmt.Println("Failed to bind to port 4221")
 		os.Exit(1)

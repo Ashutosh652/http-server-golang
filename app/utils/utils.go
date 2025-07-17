@@ -1,4 +1,4 @@
-package main
+package utils
 
 import (
 	"bytes"
@@ -11,11 +11,11 @@ func getSupportedEncodings() []string {
 	return []string{"gzip"}
 }
 
-func isEncodingSupported(title string) bool {
+func IsEncodingSupported(title string) bool {
 	return slices.Contains(getSupportedEncodings(), title)
 }
 
-func compressString(s string, encoding string) ([]byte, error) {
+func CompressString(s string, encoding string) ([]byte, error) {
 	if encoding == "gzip" {
 		var buffer bytes.Buffer
 		writer := gzip.NewWriter(&buffer)
